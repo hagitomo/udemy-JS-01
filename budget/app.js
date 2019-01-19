@@ -26,10 +26,23 @@ CONTOROLLER module
 var budgetController = (function() {
 
   // 支出のデータ
-  var Expense = function( id, description, value ) {
-    this.id = id;
+  var Expense = function( id, description, value, percentage ) {
+    this.id = id
     this.description = description
     this.value = value
+    this.percentage = -1
+  }
+
+  Expense.prototype.calcPercentage = function(totalIncome) {
+    if (totalIncome > 0) {
+      this.percentage = Math.round((this.value / totalIncome) * 100)
+    } else {
+      this.percentage = -1
+    }
+  }
+
+  Expense.prototype.getPercentage = function() {
+    return this.percentage
   }
 
   // 収入のデータ
@@ -116,6 +129,19 @@ var budgetController = (function() {
         totalExp : data.totals.exp,
         percentage : data.percentage
       }
+    },
+
+    // 支出の割合計算
+    calculatePercentage: function() {
+      data.allitems.exp.forEach((item) => {
+        item.calcPercentage(data.totals.inc)
+      })
+    },
+
+    // 支出の割合取得
+    getPercentage: function() {
+      var percentages = data.allitems.exp.map((item) => item.percentage)
+      return percentages
     }
   }
 })()
@@ -136,7 +162,8 @@ var UIContoroller = (function() {
     container: '.container',
     incomeList: '.income__list',
     expensesList: '.expenses__list',
-    deleteBtn: '.item__delete--btn'
+    deleteBtn: '.item__delete--btn',
+    expPer: '.item__percentage'
   }
 
   return {
@@ -204,6 +231,20 @@ var UIContoroller = (function() {
         document.querySelector(DOMstrings.budgetExpensePer).textContent = '---'
       }
     },
+
+    // 支出割合表示
+    displayPercentage: function(percentage) {
+      var percentageNodes = document.querySelectorAll(DOMstrings.expPer)
+      var percentageVals = Array.prototype.slice.call(percentageNodes)
+      percentageVals.forEach((el, i) => {
+        if (percentage[i] > 0) {
+          percentageVals[i].textContent = percentage[i] + '%'
+        } else {
+          percentageVals[i].textContent = '---'
+        }
+      })
+
+    }
   }
 })()
 
@@ -235,6 +276,18 @@ var contoroller = (function(budgetCtrl, UICtrl) {
     UICtrl.displayBudget(budget)
   }
 
+  // 支出のpercent計算
+  var updatePercetage = function() {
+    // 1.percent計算
+    budgetCtrl.calculatePercentage()
+
+    // 2.計算結果取得
+    var percentage = budgetCtrl.getPercentage()
+
+    // 3.UIに表示
+    UICtrl.displayPercentage(percentage)
+  }
+
   // 入力してUI表示
   var ctrlAddItem = function() {
     // 1. 入力値取得
@@ -250,6 +303,9 @@ var contoroller = (function(budgetCtrl, UICtrl) {
 
       // 4. 総額を計算・表示
       updateBudget()
+
+      // 5. 各支出の割合算出・表示
+      updatePercetage()
     }
   }
 
