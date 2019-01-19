@@ -163,7 +163,24 @@ var UIContoroller = (function() {
     incomeList: '.income__list',
     expensesList: '.expenses__list',
     deleteBtn: '.item__delete--btn',
-    expPer: '.item__percentage'
+    expPer: '.item__percentage',
+    budgetMonth: '.budget__title--month'
+  }
+
+  //  数字の表示をフォーマット
+  var formatNumber = function(num, type) {
+    var numSplit, int, dec, type
+    num = Math.abs(num) // 絶対値に
+    num = num.toFixed(2)// 小数第二位まで表示
+    numSplit = num.split('.') // 小数点で分割
+    int = numSplit[0] // 整数部分
+    if (int.length > 3) {
+      int = int.substr(0, int.length - 3) + ',' + int.substr(int.length - 3, 3)
+    }
+    dec = numSplit[1]
+
+    return (type === 'exp'? '-' : '+') + ' ' + int + '.' + dec
+
   }
 
   return {
@@ -188,7 +205,7 @@ var UIContoroller = (function() {
 
       if (type === 'exp') {
         html =
-        `<div class="item clearfix" id="exp-${item.id}"><div class="item__description">${item.description}</div><div class="right clearfix"><div class="item__value">- ${item.value}</div><div class="item__percentage"></div><div class="item__delete">
+        `<div class="item clearfix" id="exp-${item.id}"><div class="item__description">${item.description}</div><div class="right clearfix"><div class="item__value">${formatNumber(item.value, type)}</div><div class="item__percentage"></div><div class="item__delete">
         <button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button>
     </div>`
 
@@ -196,7 +213,7 @@ var UIContoroller = (function() {
       } else if ( type === 'inc') {
         html =
         `
-        <div class="item clearfix" id="inc-${item.id}"><div class="item__description">${item.description}</div><div class="right clearfix"><div class="item__value">+ ${item.value}</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>`
+        <div class="item clearfix" id="inc-${item.id}"><div class="item__description">${item.description}</div><div class="right clearfix"><div class="item__value">${formatNumber(item.value, type)}</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>`
 
         ul = DOMstrings.incomeList
       }
@@ -218,13 +235,17 @@ var UIContoroller = (function() {
       vals.forEach((el) => {
         el.value = ''
       })
+      document.querySelector(DOMstrings.inputType).focus()
     },
 
     // 総額, %表示
     displayBudget: function(budget) {
-      document.querySelector(DOMstrings.budgetVal).textContent = budget.budget
-      document.querySelector(DOMstrings.budgetIncomeVal).textContent = budget.totalInc
-      document.querySelector(DOMstrings.budgetExpenseVal).textContent = budget.totalExp
+      var type
+      budget.budget > 0 ? type = 'inc' : type = 'exp'
+
+      document.querySelector(DOMstrings.budgetVal).textContent = formatNumber(budget.budget, type)
+      document.querySelector(DOMstrings.budgetIncomeVal).textContent = formatNumber(budget.totalInc, 'inc')
+      document.querySelector(DOMstrings.budgetExpenseVal).textContent = formatNumber(budget.totalExp, 'exp')
       if(budget.percentage > 0) {
         document.querySelector(DOMstrings.budgetExpensePer).textContent = budget.percentage + '%'
       } else {
@@ -243,7 +264,29 @@ var UIContoroller = (function() {
           percentageVals[i].textContent = '---'
         }
       })
+    },
 
+    // 月表示
+    displayMonth: function() {
+      var date = new Date()
+      var year = date.getFullYear()
+      var month = date.getMonth() + 1
+
+      document.querySelector(DOMstrings.budgetMonth).textContent = year + '.' + month
+    },
+
+    // 支出or収入に応じてfocusの色変更
+    changeType: function(el) {
+      var fields = document.querySelectorAll(
+        DOMstrings.inputType + ',' +
+        DOMstrings.inputDescription + ',' +
+        DOMstrings.inputValue
+      )
+
+        Array.prototype.slice.call(fields).forEach((field) => {
+          field.classList.toggle('red-focus')
+        })
+        document.querySelector(DOMstrings.addBtn).classList.toggle('red')
     }
   }
 })()
@@ -264,6 +307,9 @@ var contoroller = (function(budgetCtrl, UICtrl) {
 
     // 入力したアイテムを削除(初期状態では存在しないので event deligation利用)
     document.querySelector(DOMstrings.container).addEventListener('click', ctrlDeleteItem)
+
+    // 入力が収入or支出に応じてforcusの色を変更
+    document.querySelector(DOMstrings.inputType).addEventListener('change', UICtrl.changeType)
   }
 
   // 総額計算
@@ -337,6 +383,7 @@ var contoroller = (function(budgetCtrl, UICtrl) {
         totalExp : 0,
         percentage : 0
       })
+      UICtrl.displayMonth()
       setupEventListeners()
     }
   }
