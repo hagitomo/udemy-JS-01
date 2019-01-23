@@ -3,7 +3,7 @@ import Search from './models/Search.js'
 // searchView
 import * as searchView from './views/searchView.js'
 // DOM elements
-import { elements } from './views/base.js'
+import { elements, elementStrings, renderLoader, clearLoader  } from './views/base.js'
 
 /** Global state
  * - Search object
@@ -26,13 +26,14 @@ const controlSearch = async () => {
     // 3) 検索窓、検索結果を初期化、loadingを表示
     searchView.clearInput()
     searchView.clearResults()
+    renderLoader(elements.searchRes)
 
     // 4) 検索実行
     await state.search.getResults()
 
     // 5) 検索結果をUIに表示
-    await searchView.renderResults( state.search.result )
-
+    clearLoader()
+    searchView.renderResults( state.search.result )
   }
 }
 
@@ -40,4 +41,15 @@ const controlSearch = async () => {
 elements.searchForm.addEventListener('submit', e => {
   e.preventDefault()
   controlSearch()
+})
+
+// 検索結果 ページネーション
+elements.searchResPages.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-inline')
+
+  if( btn ) {
+    const goToPage = parseInt(btn.dataset.goto)
+    searchView.clearResults()
+    searchView.renderResults( state.search.result, goToPage)
+  }
 })
