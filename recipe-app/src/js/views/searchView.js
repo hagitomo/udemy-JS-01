@@ -18,6 +18,15 @@ export const clearResults = () => {
   elements.searchResPages.innerHTML= ''
 }
 
+// レシピ詳細に選択されたリスト ハイライト表示
+export const highlightSelected = id => {
+  const resultArr = Array.from(document.querySelectorAll('.results__link'))
+  resultArr.forEach(el => {
+    el.classList.remove('results__link--active')
+  })
+  document.querySelector(`a[href="#${id}"]`).classList.add('results__link--active')
+}
+
 // タイトルの文字数制限
 const limitRecipeTitle = (title, limit = 17) => {
   const newTitle = []
@@ -93,5 +102,15 @@ export const renderResults = ( recipes, page = 1, resPerPage = 10 ) => {
 
   recipes.slice( start, end ).forEach( renderRecipe )
   renderButtons( page, recipes.length, resPerPage )
-
 }
+
+// エラー時の表示
+export const renderErrorSearch = ( ()  => {
+  const markup =
+  `
+  <li>
+    <p> soory somthing wrong... cant read search result</p>
+  </li>
+  `
+  elements.searchResList.insertAdjacentHTML('beforeend', markup)
+})
