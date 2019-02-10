@@ -2,12 +2,15 @@
 import Search from './models/Search.js'
 // Recipe Class (レシピ詳細取得)
 import Recipe from './models/Recipe.js'
+// List Class (item list)
+import List from './models/List.js'
 
 // searchView
 import * as searchView from './views/searchView.js'
 // recipeView
 import * as recipeView from './views/recipeView.js'
-
+// listView
+import * as listView from './views/listView.js'
 
 // DOM elements
 import { elements, elementStrings, renderLoader, clearLoader  } from './views/base.js'
@@ -82,7 +85,7 @@ const controlRecipe = async () => {
     renderLoader(elements.recipe)
 
     // 選択されたレシピをハイライト
-    searchView.highlightSelected(id)
+    if (state.search) searchView.highlightSelected(id);
 
     // recipe object作成
     state.recipe = new Recipe(id)
@@ -112,6 +115,43 @@ const controlRecipe = async () => {
 ['hashchange', 'load'].forEach((event) => window.addEventListener(event, controlRecipe))
 
 
+/**
+ * LIST CONTROLLER
+ */
+
+const controlList = () => {
+  // 買い物リストに始めて追加された場合
+  if (!state.list) {
+    state.list = new List()
+  }
+  // レシピの材料を買い物リストに追加
+  state.recipe.ingredients.forEach( el => {
+    const item = state.list.addItem(el.count, el.unit, el.ingredient)
+    // uiに描画
+    listView.renderItem(item)
+  } )
+}
+
+// 買い物リストの削除、増減
+elements.shopping.addEventListener('click', e => {
+  const id = e.target.closest('.shopping__item').dataset.itemid
+
+  // 削除btnクリック
+  if (e.target.matches('.shopping__delete, .shopping__delete *')) {
+    // stateから該当アイテム削除
+    state.list.deleteItem(id)
+
+    // UIからアイテム削除
+    listView.deleteItem(id)
+
+  //増減ボタン
+  } else if ( e.target.matches('.shopping__count-value') ) {
+    const val = parseFloat(e.target.value, 10)
+    state.list.updateCount(id, val)
+  }
+})
+
+
 // レシピ内の増減ボタンをクリック
 elements.recipe.addEventListener('click', e => {
   // 押した要素のクラスが'btn-decrease' または 'btn-decrease'を親に持つ要素の場合、servingsが1以上の場合
@@ -125,5 +165,14 @@ elements.recipe.addEventListener('click', e => {
   } else if ( e.target.matches('.btn-increase, .btn-increase *')) {
     state.recipe.updateServings('inc')
     recipeView.updateServingsIngredients(state.recipe)
+
+    // shoping listに追加btnを押した場合
+  } else if ( e.target.matches('.recipe__btn--add, .recipe__btn--add *')) {
+    controlList()
   }
 })
+
+
+// shopinglist アイテム
+const list = new List()
+
