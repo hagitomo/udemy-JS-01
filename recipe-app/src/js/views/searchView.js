@@ -24,7 +24,7 @@ export const highlightSelected = id => {
   resultArr.forEach(el => {
     el.classList.remove('results__link--active')
   })
-  document.querySelector(`a[href="#${id}"]`).classList.add('results__link--active')
+  document.querySelector(`.results__link[href="#${id}"]`).classList.add('results__link--active')
 }
 
 // タイトルの文字数制限

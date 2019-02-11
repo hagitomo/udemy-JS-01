@@ -4,6 +4,8 @@ import Search from './models/Search.js'
 import Recipe from './models/Recipe.js'
 // List Class (item list)
 import List from './models/List.js'
+// Likes Class (お気に入り)
+import Likes from './models/Likes.js'
 
 // searchView
 import * as searchView from './views/searchView.js'
@@ -11,6 +13,8 @@ import * as searchView from './views/searchView.js'
 import * as recipeView from './views/recipeView.js'
 // listView
 import * as listView from './views/listView.js'
+// likeView
+import * as likesView from './views/likesView.js'
 
 // DOM elements
 import { elements, elementStrings, renderLoader, clearLoader  } from './views/base.js'
@@ -102,7 +106,10 @@ const controlRecipe = async () => {
 
       // UIに表示
       clearLoader()
-      recipeView.renderRecipe(state.recipe)
+      recipeView.renderRecipe(
+        state.recipe,
+        state.likes.isLiked(id) // likeされているかでlikeアイコンを切り替え
+      )
     } catch(err) {
       recipeView.renderErrorRecipe()
       console.log('recipe process err')
@@ -152,7 +159,56 @@ elements.shopping.addEventListener('click', e => {
 })
 
 
-// レシピ内の増減ボタンをクリック
+/**
+ * LIKE CONTROLLER
+ */
+const controlLikes = () => {
+
+  // ID
+  const currentID = state.recipe.id
+
+  if (!state.likes.isLiked(currentID)) {
+    // like追加 ( state.recipeのプロパティを追加 )
+    const newLike = state.likes.addLike(
+      currentID,
+      state.recipe.title,
+      state.recipe.author,
+      state.recipe.img
+    )
+
+    // like btn 反転
+    likesView.toggleLikeBtn(true)
+
+    // UIにlike追加
+    likesView.renderLike(newLike)
+  } else {
+    // like削除
+    state.likes.deleteLike(currentID)
+    // like btn 反転
+    likesView.toggleLikeBtn(false)
+
+    // UIからlike 削除
+    likesView.deleteLike(currentID)
+  }
+
+  // like menuボタン 切り替え
+  likesView.toggleLikeMenu(state.likes.getNumLikes())
+}
+
+// localからlikeデータを読み込む
+window.addEventListener('load', () => {
+  state.likes = new Likes()
+  state.likes.readStorage()
+
+  // like menuボタン 切り替え
+  likesView.toggleLikeMenu(state.likes.getNumLikes())
+
+  // likesを表示
+  state.likes.likes.forEach((like) => likesView.renderLike(like))
+})
+
+
+// レシピ内の各ボタンをクリック
 elements.recipe.addEventListener('click', e => {
   // 押した要素のクラスが'btn-decrease' または 'btn-decrease'を親に持つ要素の場合、servingsが1以上の場合
   if (e.target.matches('.btn-decrease, .btn-decrease *')) {
@@ -169,10 +225,9 @@ elements.recipe.addEventListener('click', e => {
     // shoping listに追加btnを押した場合
   } else if ( e.target.matches('.recipe__btn--add, .recipe__btn--add *')) {
     controlList()
+
+    // like btn
+  } else if ( e.target.matches('.recipe__love, .recipe__love *')) {
+    controlLikes()
   }
 })
-
-
-// shopinglist アイテム
-const list = new List()
-
